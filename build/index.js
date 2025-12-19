@@ -363,14 +363,33 @@ app.delete('/mcp', async (req, res) => {
     }
 });
 // Webhook endpoint para receber callbacks de pagamento
-app.post('/webhook/:transactionId', jsonParser, (req, res) => {
+// Usa raw body para debug e depois parseia manualmente
+app.post('/webhook/:transactionId', express.raw({ type: '*/*' }), (req, res) => {
     const { transactionId } = req.params;
     console.error(`[Webhook] Recebido callback para transactionId: ${transactionId}`);
-    console.error(`[Webhook] Body:`, JSON.stringify(req.body, null, 2));
+    console.error(`[Webhook] Headers:`, JSON.stringify(req.headers, null, 2));
+    console.error(`[Webhook] Raw Body:`, req.body?.toString?.() || req.body);
+    // Tenta parsear o body como JSON
+    let parsedBody = {};
+    try {
+        if (Buffer.isBuffer(req.body)) {
+            parsedBody = JSON.parse(req.body.toString());
+        }
+        else if (typeof req.body === 'string') {
+            parsedBody = JSON.parse(req.body);
+        }
+        else if (typeof req.body === 'object') {
+            parsedBody = req.body;
+        }
+    }
+    catch (e) {
+        console.error(`[Webhook] Erro ao parsear body:`, e);
+    }
+    console.error(`[Webhook] Parsed Body:`, JSON.stringify(parsedBody, null, 2));
     if (pendingSales.has(transactionId)) {
         const { resolve, timeout } = pendingSales.get(transactionId);
         clearTimeout(timeout);
-        resolve(req.body);
+        resolve(parsedBody); // Usa o body parseado
         pendingSales.delete(transactionId);
         res.status(200).send('OK');
     }
