@@ -2,8 +2,6 @@ services:
   mcp-server:
     build: .
     restart: always
-    ports:
-      - "3000:3000"
     environment:
       - WEBHOOK_PORT=3000
       # IMPORTANTE: No Easypanel ou produção, altere para a URL pública do seu serviço
