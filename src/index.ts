@@ -94,13 +94,47 @@ async function getTicketsDisponiveis(dataVisita: string) {
     return { raw: parsed, simplified: tickets };
 }
 
+// Helper para obter data atual no formato AAAA-MM-DD (timezone Brasil)
+function getDataAtualBrasil(): string {
+    const now = new Date();
+    // Ajusta para timezone de Brasília (UTC-3)
+    const brasilOffset = -3 * 60;
+    const localOffset = now.getTimezoneOffset();
+    const brasilTime = new Date(now.getTime() + (localOffset - brasilOffset) * 60000);
+    return brasilTime.toISOString().split('T')[0];
+}
+
+// Helper para validar se a data não é passada
+function validarDataFutura(dataVisita: string): { valida: boolean; mensagem?: string } {
+    const hoje = getDataAtualBrasil();
+    if (dataVisita < hoje) {
+        return {
+            valida: false,
+            mensagem: `ERRO: A data informada (${dataVisita}) é uma data PASSADA. Hoje é ${hoje}. Por favor, informe uma data igual ou posterior a hoje.`
+        };
+    }
+    return { valida: true };
+}
+
 // Ferramenta: Listar Tickets
 server.tool(
     "listar_tickets",
     {
-        dataVisita: z.string().describe("Data da visita no formato AAAA-MM-DD. Obrigatório para consultar a disponibilidade e preços.")
+        dataVisita: z.string().describe(`Data da visita no formato AAAA-MM-DD. IMPORTANTE: A data atual é ${getDataAtualBrasil()}. Não aceite datas passadas. Para "amanhã", calcule a data correta a partir de hoje. Obrigatório para consultar a disponibilidade e preços dos ingressos.`)
     },
     async ({ dataVisita }) => {
+        // Validação de data passada ANTES de chamar a API
+        const validacao = validarDataFutura(dataVisita);
+        if (!validacao.valida) {
+            return {
+                content: [{
+                    type: "text",
+                    text: validacao.mensagem!
+                }],
+                isError: true
+            };
+        }
+
         try {
             const result = await getTicketsDisponiveis(dataVisita);
             return {
@@ -131,7 +165,7 @@ server.tool(
             // valorUnitario removido: será buscado automaticamente
             quantidade: z.number().default(1).describe("Quantidade de ingressos deste tipo")
         })).describe("Lista de itens a serem comprados. EXEMPLO DE VENDA MÚLTIPLA: Para vender 1 Adulto e 1 Infantil, adicione DOIS objetos nesta lista: um com o ID do ingresso Adulto e outro com o ID do ingresso Infantil."),
-        dataVisita: z.string().describe("Data da visita no formato AAAA-MM-DD"),
+        dataVisita: z.string().describe(`Data da visita no formato AAAA-MM-DD. IMPORTANTE: A data atual é ${getDataAtualBrasil()}. Não aceite datas passadas.`),
         // Dados do comprador/visitante principal obrigatórios
         compradorNome: z.string().describe("Nome completo do comprador/responsável"),
         compradorDocumento: z.string().describe("CPF do comprador (apenas números, sem pontuação)"),
@@ -139,6 +173,18 @@ server.tool(
         compradorTelefone: z.string().describe("Telefone do comprador com DDD (apenas números)")
     },
     async ({ itens, dataVisita, compradorNome, compradorDocumento, compradorEmail, compradorTelefone }) => {
+        // Validação de data passada ANTES de processar
+        const validacao = validarDataFutura(dataVisita);
+        if (!validacao.valida) {
+            return {
+                content: [{
+                    type: "text",
+                    text: validacao.mensagem!
+                }],
+                isError: true
+            };
+        }
+
         const transactionId = crypto.randomUUID();
         const webhookUrl = `${WEBHOOK_URL_BASE}/webhook/${transactionId}`;
 
