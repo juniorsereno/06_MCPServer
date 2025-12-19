@@ -1,8 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const https = require('https');
-const crypto = require('crypto');
+import fs from 'fs';
+import path from 'path';
+import axios from 'axios';
+import https from 'https';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configurações
 const urlApi = 'https://multiclubes.balipark.com.br/(a655f81b-8437-48ec-8876-069664ee891a)/TicketsV2.svc';
