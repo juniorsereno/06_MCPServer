@@ -1,0 +1,24 @@
+{
+  "name": "multiclube-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for MultiClube API with Webhook integration",
+  "type": "module",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "start": "node build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "axios": "^1.7.9",
+    "express": "^4.21.2",
+    "xml2js": "^0.6.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/xml2js": "^0.4.14",
+    "typescript": "^5.7.2"
+  }
+}

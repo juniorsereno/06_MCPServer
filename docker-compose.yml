@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    container_name: multiclube-mcp-server
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - WEBHOOK_PORT=3000
+      # IMPORTANTE: No Easypanel ou produção, altere para a URL pública do seu serviço
+      # Exemplo: https://mcp-server.seu-dominio.com
+      - WEBHOOK_URL_BASE=http://localhost:3000
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M

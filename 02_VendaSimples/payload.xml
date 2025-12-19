@@ -1,0 +1,89 @@
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:v2="http://multiclubes.com.br/tickets/v2">
+    <soapenv:Header>
+        <_AuthenticationKey xmlns="ns">3fe6ca43-65cc-4776-9fb8-667855dbd6e0</_AuthenticationKey>
+    </soapenv:Header>
+    <soapenv:Body>
+        <v2:Sell>
+            <v2:data>
+                <v2:PaymentLink>
+                    <v2:DueDays>2</v2:DueDays>
+                    <v2:WebhookUrl>https://webh.criativamaisdigital.com.br/webhook/66015730-101c-4441-b93b-bdbecc963461</v2:WebhookUrl>
+                </v2:PaymentLink>
+
+                <v2:Tickets>
+                    <v2:SaleItemData>
+                        <v2:Address>
+                            <!--Optional:-->
+                            <v2:Burgh>Parque Santana</v2:Burgh>
+                            <!--Optional:-->
+                            <v2:City>Barra do Piraí</v2:City>
+                            <!--Optional:-->
+                            <v2:Country>Brasil</v2:Country>
+                            <!--Optional:-->
+                            <v2:Number>31</v2:Number>
+                            <!--Optional:-->
+                            <v2:PostalCode>27143610</v2:PostalCode>
+                            <!--Optional:-->
+                            <v2:State>Rio de Janeiro</v2:State>
+                            <!--Optional:-->
+                            <v2:Street>Travessa B</v2:Street>
+                        </v2:Address>
+                        <!--Optional:-->
+                        <v2:Document>123</v2:Document>
+                        <!--Optional:-->
+                        <v2:Email>tester@teste.com</v2:Email>
+                        <!--
+<v2:Interval>3</v2:Interval>
+                  -->
+                        <v2:Name>Nome completo</v2:Name>
+                        <!--Optional:-->
+                        <v2:PhoneNumber>24999999999</v2:PhoneNumber>
+                        <v2:Quantity>1</v2:Quantity>
+
+                        <v2:TicketId>YXD11235</v2:TicketId>
+                        <v2:Values>
+                            <v2:DueValue>100</v2:DueValue>
+                            <!--Optional:-->
+                            <v2:PaidValue>0</v2:PaidValue>
+                        </v2:Values>
+                    </v2:SaleItemData>
+                </v2:Tickets>
+                <v2:Values>
+                    <v2:DueValue>100</v2:DueValue>
+                    <!--Optional:-->
+                    <v2:PaidValue>0</v2:PaidValue>
+                </v2:Values>
+                <v2:VisitDate>2025-12-14</v2:VisitDate>
+                <!--Optional:-->
+                <v2:Visitor>
+                    <!--Optional:-->
+                    <v2:Address>
+                        <!--Optional:-->
+                        <v2:Burgh>?</v2:Burgh>
+                        <!--Optional:-->
+                        <v2:City>?</v2:City>
+                        <!--Optional:-->
+                        <v2:Country>?</v2:Country>
+                        <!--Optional:-->
+                        <v2:Number>?</v2:Number>
+                        <!--Optional:-->
+                        <v2:PostalCode>?</v2:PostalCode>
+                        <!--Optional:-->
+                        <v2:State>?</v2:State>
+                        <!--Optional:-->
+                        <v2:Street>?</v2:Street>
+                    </v2:Address>
+                    <v2:Document>?</v2:Document>
+                    <!--Optional:-->
+                    <v2:Email>?</v2:Email>
+                    <v2:Name>?</v2:Name>
+                    <!--Optional:-->
+                    <v2:PhoneNumber>?</v2:PhoneNumber>
+                </v2:Visitor>
+                <!--Optional:
+<v2:VoucherCode></v2:VoucherCode>
+            -->
+            </v2:data>
+        </v2:Sell>
+    </soapenv:Body>
+</soapenv:Envelope>
