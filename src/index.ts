@@ -259,6 +259,14 @@ server.tool(
                             </v2:Visitor>
         `;
 
+        // Calcula DueDays baseado na diferença entre hoje e a data da visita
+        const hoje = new Date(getDataAtualBrasil());
+        const visita = new Date(dataVisita);
+        const diffTime = visita.getTime() - hoje.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        // DueDays deve ser no máximo a quantidade de dias até a visita, mínimo 1
+        const dueDays = Math.max(1, Math.min(diffDays, 2));
+
         const soapRequest = `
             <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:v2="http://multiclubes.com.br/tickets/v2">
                 <soapenv:Header>
@@ -268,7 +276,7 @@ server.tool(
                     <v2:Sell>
                         <v2:data>
                             <v2:PaymentLink>
-                                <v2:DueDays>2</v2:DueDays>
+                                <v2:DueDays>${dueDays}</v2:DueDays>
                                 <v2:WebhookUrl>${webhookUrl}</v2:WebhookUrl>
                             </v2:PaymentLink>
                             <v2:Tickets>
@@ -287,6 +295,8 @@ server.tool(
 
         try {
             console.error(`[GerarVenda] Enviando requisição SOAP...`);
+            console.error(`[GerarVenda] XML Request:\n${soapRequest}`);
+            
             const response = await axios.post(URL_API, soapRequest, {
                 headers: {
                     'Content-Type': 'text/xml; charset=utf-8',
@@ -316,10 +326,18 @@ server.tool(
                 pendingSales.delete(transactionId);
             }
             
+            // Captura detalhes do erro da API
+            let errorDetails = error.message;
+            if (error.response) {
+                console.error(`[GerarVenda] Status: ${error.response.status}`);
+                console.error(`[GerarVenda] Response Data:`, error.response.data);
+                errorDetails = `Status ${error.response.status}: ${error.response.data || error.message}`;
+            }
+            
             return {
                 content: [{
                     type: "text",
-                    text: `Erro ao gerar venda: ${error.message}`
+                    text: `Erro ao gerar venda: ${errorDetails}`
                 }],
                 isError: true
             };
