@@ -14,7 +14,9 @@ const WEBHOOK_URL_BASE = process.env.WEBHOOK_URL_BASE || `http://localhost:${POR
 const pendingSales = new Map();
 // Configura servidor Express
 const app = express();
-app.use(express.json());
+// Middleware de JSON apenas para rotas específicas (não para /mcp)
+app.use('/webhook', express.json());
+app.use('/health', express.json());
 // Configurações da API SOAP
 const URL_API = 'https://multiclubes.balipark.com.br/(a655f81b-8437-48ec-8876-069664ee891a)/TicketsV2.svc';
 const SOAP_ACTION_GET_TICKETS = 'http://multiclubes.com.br/tickets/v2/IService/GetTickets';
@@ -106,9 +108,11 @@ server.tool("listar_tickets", {
 server.tool("gerar_venda", {
     itens: z.array(z.object({
         ticketId: z.string().describe("ID do ticket obtido na listagem de tickets (obrigatório)"),
+        // valorUnitario removido: será buscado automaticamente
         quantidade: z.number().default(1).describe("Quantidade de ingressos deste tipo")
-    })).describe("Lista de itens a serem comprados."),
+    })).describe("Lista de itens a serem comprados. EXEMPLO DE VENDA MÚLTIPLA: Para vender 1 Adulto e 1 Infantil, adicione DOIS objetos nesta lista: um com o ID do ingresso Adulto e outro com o ID do ingresso Infantil."),
     dataVisita: z.string().describe("Data da visita no formato AAAA-MM-DD"),
+    // Dados do comprador/visitante principal obrigatórios
     compradorNome: z.string().describe("Nome completo do comprador/responsável"),
     compradorDocumento: z.string().describe("CPF do comprador (apenas números, sem pontuação)"),
     compradorEmail: z.string().describe("Email válido do comprador para envio do voucher"),

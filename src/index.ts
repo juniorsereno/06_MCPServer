@@ -17,7 +17,10 @@ const pendingSales = new Map<string, { resolve: (value: any) => void, reject: (r
 
 // Configura servidor Express
 const app = express();
-app.use(express.json());
+
+// Middleware de JSON apenas para rotas específicas (não para /mcp)
+app.use('/webhook', express.json());
+app.use('/health', express.json());
 
 // Configurações da API SOAP
 const URL_API = 'https://multiclubes.balipark.com.br/(a655f81b-8437-48ec-8876-069664ee891a)/TicketsV2.svc';
