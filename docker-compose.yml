@@ -2,11 +2,8 @@ services:
   mcp-server:
     build: .
     restart: always
-    environment:
-      - WEBHOOK_PORT=3000
-      # IMPORTANTE: No Easypanel ou produção, altere para a URL pública do seu serviço
-      # Exemplo: https://mcp-server.seu-dominio.com
-      - WEBHOOK_URL_BASE=http://localhost:3000
+    env_file:
+      - .env
     deploy:
       resources:
         limits:
