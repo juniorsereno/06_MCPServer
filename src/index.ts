@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { z } from "zod";
 import axios from 'axios';
 import https from 'https';
@@ -317,14 +317,48 @@ server.tool(
     }
 );
 
-// Start receiving messages on stdin and sending messages on stdout
-const transport = new StdioServerTransport();
-await server.connect(transport);
-console.error('MultiClube MCP Server running on stdio');
+// (Removido pois já foi substituído no diff anterior e a variável transport global foi adicionada lá)
 
-// Ajuste na rota do express para usar o transactionId corretamente como definido no tool
-// Vamos sobrescrever a rota anterior para garantir que bate com a lógica
-app._router.stack = app._router.stack.filter((r: any) => r.route?.path !== '/webhook/:saleId');
+// Endpoint para receber mensagens do cliente MCP (POST)
+app.post('/messages', async (req, res) => {
+    // O SSEServerTransport requer que o POST seja tratado pelo transport correspondente.
+    // Como o SDK não expõe um gerenciador global de transports SSE, precisamos de uma abordagem para rotear a mensagem.
+    // A documentação do SDK sugere que o SSEServerTransport gerencia a resposta do POST internamente.
+    // Vamos usar o método `handlePostMessage` do transporte se ele estiver acessível ou instanciar um novo transport para tratar a mensagem?
+    // Não, o transporte é stateful.
+    
+    // Correção: O SDK @modelcontextprotocol/sdk não tem `server.processPostBody`.
+    // O SSEServerTransport é projetado para lidar com req/res diretamente no POST se passado.
+    // Mas aqui, como temos múltiplas conexões possíveis, precisamos identificar qual transporte tratar.
+    // Na implementação padrão SSE do MCP, o POST é stateless em relação ao transporte SSE se usar session IDs, mas o SDK básico não gerencia sessões automaticamente dessa forma simples.
+    
+    // Solução Temporária e Robusta para Single-Client ou Simple-Setup:
+    // O SDK atual (v0.6+) geralmente espera que você passe o request para o transport.
+    // Mas como o transport é criado no GET /sse, precisamos armazená-lo?
+    
+    // Na falta de um gerenciador de sessão complexo no código atual, vamos assumir que o handlePostMessage do transporte deve ser chamado.
+    // Para simplificar e fazer funcionar com o Claude Desktop/Outros, vamos usar uma abordagem onde o POST é processado genericamente.
+    // Mas espere, o SSEServerTransport precisa enviar a resposta para o `res` do POST.
+    
+    // Vamos usar a abordagem recomendada simplificada:
+    // O `SSEServerTransport` tem um método `handlePostMessage(req, res)`.
+    // Mas precisamos da instância criada no /sse.
+    // Vamos armazenar o transporte ativo (suportando apenas 1 cliente por vez neste exemplo simples ou usando session ID na URL).
+    
+    // Para simplificar este servidor MCP específico:
+    await transport?.handlePostMessage(req, res);
+});
+
+let transport: SSEServerTransport | null = null;
+
+// Endpoint SSE para conexão do cliente MCP
+app.get('/sse', async (req, res) => {
+    console.log("[SSE] Nova conexão iniciada");
+    transport = new SSEServerTransport("/messages", res);
+    await server.connect(transport);
+});
+
+// Endpoint Webhook (Mantido e ajustado)
 app.post('/webhook/:transactionId', (req, res) => {
     const { transactionId } = req.params;
     console.error(`[Webhook] Recebido callback para transactionId: ${transactionId}`);
@@ -343,3 +377,6 @@ app.post('/webhook/:transactionId', (req, res) => {
         res.status(404).send('Not Found');
     }
 });
+
+// O server.listen já foi chamado no início do arquivo (const serverExpress = app.listen...)
+console.error(`MultiClube MCP Server running via SSE on port ${PORT}`);

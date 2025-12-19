@@ -1,3 +1,0 @@
-Olá, tudo bem. Tenho um agente de IA que está em um sistema de atendimento ao cliente, ele faz o atendimento de clientes interessados em ir a um parque aquatico com um ingresso day use, estou montando um servidor MCP que chama uma API de listar tickets para verificar os tickets disponiveis na data que o cliente informa e os valores de cada ingresso.
-
-Nesse MCP teremos também uma tool que GeraVenda onde ela retorna um link de pagamento para um webhook que retorna no MCP pro agente
