@@ -14,9 +14,8 @@ const WEBHOOK_URL_BASE = process.env.WEBHOOK_URL_BASE || `http://localhost:${POR
 const pendingSales = new Map();
 // Configura servidor Express
 const app = express();
-// Middleware de JSON apenas para rotas específicas (não para /mcp)
-app.use('/webhook', express.json());
-app.use('/health', express.json());
+// Middleware de JSON para rotas específicas (não para /mcp que precisa do body raw)
+const jsonParser = express.json();
 // Configurações da API SOAP
 const URL_API = 'https://multiclubes.balipark.com.br/(a655f81b-8437-48ec-8876-069664ee891a)/TicketsV2.svc';
 const SOAP_ACTION_GET_TICKETS = 'http://multiclubes.com.br/tickets/v2/IService/GetTickets';
@@ -364,7 +363,7 @@ app.delete('/mcp', async (req, res) => {
     }
 });
 // Webhook endpoint para receber callbacks de pagamento
-app.post('/webhook/:transactionId', (req, res) => {
+app.post('/webhook/:transactionId', jsonParser, (req, res) => {
     const { transactionId } = req.params;
     console.error(`[Webhook] Recebido callback para transactionId: ${transactionId}`);
     console.error(`[Webhook] Body:`, JSON.stringify(req.body, null, 2));
