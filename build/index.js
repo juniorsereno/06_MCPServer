@@ -372,14 +372,21 @@ app.post('/webhook/:transactionId', express.raw({ type: '*/*' }), (req, res) => 
     // Tenta parsear o body como JSON
     let parsedBody = {};
     try {
+        let bodyStr = '';
         if (Buffer.isBuffer(req.body)) {
-            parsedBody = JSON.parse(req.body.toString());
+            bodyStr = req.body.toString();
         }
         else if (typeof req.body === 'string') {
-            parsedBody = JSON.parse(req.body);
+            bodyStr = req.body;
         }
         else if (typeof req.body === 'object') {
             parsedBody = req.body;
+        }
+        if (bodyStr) {
+            // Corrige o formato brasileiro de número (167,00 -> 167.00)
+            // Regex: encontra números com vírgula decimal e substitui por ponto
+            bodyStr = bodyStr.replace(/(\d+),(\d{2})(\s*[}\],])/g, '$1.$2$3');
+            parsedBody = JSON.parse(bodyStr);
         }
     }
     catch (e) {
