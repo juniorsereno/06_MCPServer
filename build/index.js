@@ -117,10 +117,33 @@ server.tool("listar_tickets", {
     }
     try {
         const result = await getTicketsDisponiveis(dataVisita);
+        // Calcula o dia da semana
+        const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+        const dataObj = new Date(dataVisita + 'T12:00:00');
+        const diaSemana = diasSemana[dataObj.getDay()];
+        // Formata o retorno de forma limpa para a LLM
+        const planosFormatados = result.simplified.reduce((acc, ticket) => {
+            // Agrupa por plano
+            let plano = acc.find(p => p.plano === ticket.plano);
+            if (!plano) {
+                plano = { plano: ticket.plano, tickets: [] };
+                acc.push(plano);
+            }
+            plano.tickets.push({
+                ticketId: ticket.id,
+                descricao: ticket.nome,
+                valor: ticket.valor
+            });
+            return acc;
+        }, []);
         return {
             content: [{
                     type: "text",
-                    text: JSON.stringify(result.raw, null, 2)
+                    text: JSON.stringify({
+                        dataConsultada: dataVisita,
+                        diaSemana: diaSemana,
+                        planos: planosFormatados
+                    }, null, 2)
                 }]
         };
     }
@@ -185,7 +208,7 @@ server.tool("gerar_venda", {
             return {
                 content: [{
                         type: "text",
-                        text: `Erro: O Ticket ID '${item.ticketId}' não está disponível para a data ${dataVisita}, consulte novamente a data no listar_tickets para verificar o ticket ID atualizado.`
+                        text: `Erro: O Ticket ID '${item.ticketId}' não está disponível para a data ${dataVisita}.`
                     }],
                 isError: true
             };
@@ -268,12 +291,31 @@ server.tool("gerar_venda", {
         const parsed = await parseStringPromise(response.data, { explicitArray: false, ignoreAttrs: true });
         console.error(`[GerarVenda] Resposta SOAP recebida. Aguardando webhook...`);
         const webhookData = await promessaVenda;
+        // Extrai dados relevantes da resposta SOAP
+        const sellResult = parsed['s:Envelope']?.['s:Body']?.SellResponse?.SellResult;
+        const saleId = sellResult?.SaleId;
+        const ticketsResult = sellResult?.Tickets?.SaleItemResult;
+        const ingressos = Array.isArray(ticketsResult) ? ticketsResult : [ticketsResult];
+        // Formata retorno limpo para a LLM
         return {
             content: [{
                     type: "text",
                     text: JSON.stringify({
-                        soapResponse: parsed,
-                        paymentData: webhookData
+                        sucesso: true,
+                        venda: {
+                            saleId: saleId,
+                            ingressos: ingressos.map((ing) => ({
+                                ticketId: ing.TicketId,
+                                codigoAcesso: ing.AccessCode
+                            }))
+                        },
+                        pagamento: {
+                            voucherCode: webhookData?.data?.voucherCode,
+                            orderNumber: webhookData?.data?.orderNumber,
+                            valorTotal: webhookData?.data?.value,
+                            vencimento: webhookData?.data?.dueDate,
+                            linkPagamento: webhookData?.data?.url
+                        }
                     }, null, 2)
                 }]
         };
