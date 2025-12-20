@@ -163,7 +163,7 @@ server.tool("gerar_venda", {
         ticketId: z.string().describe("ID do ticket obtido na listagem de tickets (obrigatório)"),
         // valorUnitario removido: será buscado automaticamente
         quantidade: z.number().default(1).describe("Quantidade de ingressos deste tipo")
-    })).describe("Lista de itens a serem comprados. VENDA ÚNICA: Para vender apenas 1 ingresso, adicione UM objeto com o ID do ingresso desejado. VENDA MÚLTIPLA: Para vender 1 Adulto e 1 Infantil, adicione DOIS objetos nesta lista: um com o ID do ingresso Adulto e outro com o ID do ingresso Infantil."),
+    })).describe("Lista de itens a serem comprados. VENDA ÚNICA: Para vender apenas 1 ingresso, adicione UM objeto com o ID do ingresso desejado. VENDA MÚLTIPLA: Para vender 1 Adulto e 1 Infantil, adicione DOIS objetos nesta lista: um com o ID do ingresso Adulto e outro com o ID do ingresso Infantil. Formato: [{ticketId: '<ID_DO_TICKET>', quantidade: <NUMERO>}]"),
     dataVisita: z.string().describe(`Data da visita no formato AAAA-MM-DD. IMPORTANTE: A data atual é ${getDataAtualBrasil()}. Não aceite datas passadas.`),
     // Dados do comprador/visitante principal obrigatórios
     compradorNome: z.string().describe("Nome completo do comprador/responsável"),
