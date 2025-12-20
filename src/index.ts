@@ -264,13 +264,13 @@ server.tool(
             pendingSales.set(transactionId, { resolve, reject, timeout });
         });
 
-        // Constrói os itens XML
+        // Constrói os itens XML - DueValue do item é o valor UNITÁRIO
         const itemsXml = itensComValor.map(item => `
                                 <v2:SaleItemData>
                                     <v2:Quantity>${item.quantidade}</v2:Quantity>
                                     <v2:TicketId>${item.ticketId}</v2:TicketId>
                                     <v2:Values>
-                                        <v2:DueValue>${(item.valorUnitario * item.quantidade).toFixed(2)}</v2:DueValue>
+                                        <v2:DueValue>${item.valorUnitario.toFixed(2)}</v2:DueValue>
                                     </v2:Values>
                                 </v2:SaleItemData>
         `).join('\n');
