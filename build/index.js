@@ -185,7 +185,7 @@ server.tool("gerar_venda", {
             return {
                 content: [{
                         type: "text",
-                        text: `Erro: O Ticket ID '${item.ticketId}' não está disponível para a data ${dataVisita}.`
+                        text: `Erro: O Ticket ID '${item.ticketId}' não está disponível para a data ${dataVisita}, consulte novamente a data no listar_tickets para verificar o ticket ID atualizado.`
                     }],
                 isError: true
             };
