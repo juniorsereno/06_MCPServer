@@ -309,7 +309,6 @@ server.tool("gerar_venda", "Gera uma venda de ingressos e retorna o link de paga
                         },
                         pagamento: {
                             voucherCode: webhookData?.data?.voucherCode,
-                            orderNumber: webhookData?.data?.orderNumber,
                             valorTotal: webhookData?.data?.value,
                             vencimento: webhookData?.data?.dueDate,
                             linkPagamento: webhookData?.data?.url
