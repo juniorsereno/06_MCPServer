@@ -161,6 +161,56 @@ function validarDataFutura(dataVisita: string): { valida: boolean; mensagem?: st
     return { valida: true };
 }
 
+// Helper para calcular dias de antecedência
+function calcularDiasAntecedencia(dataVisita: string): number {
+    const hoje = new Date(getDataAtualBrasil());
+    const visita = new Date(dataVisita);
+    const diffTime = visita.getTime() - hoje.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// Helper para verificar se o ingresso é elegível para desconto
+function isIngressoElegivelDesconto(nomeIngresso: string): boolean {
+    const nomeUpper = nomeIngresso.toUpperCase();
+    return nomeUpper.includes('INGRESSO ADULTO') || nomeUpper.includes('INGRESSO INFANTIL');
+}
+
+// Helper para calcular desconto de antecipação
+// Até 10 dias: 10% | Mais de 10 dias: 14%
+// Aplica apenas em INGRESSO ADULTO e INGRESSO INFANTIL
+// Arredonda para cima
+function calcularValorComDesconto(valorOriginal: number, nomeIngresso: string, diasAntecedencia: number): { 
+    valorFinal: number; 
+    desconto: number; 
+    percentualDesconto: number;
+    temDesconto: boolean;
+} {
+    // Verifica se é elegível para desconto
+    if (!isIngressoElegivelDesconto(nomeIngresso)) {
+        return { 
+            valorFinal: valorOriginal, 
+            desconto: 0, 
+            percentualDesconto: 0,
+            temDesconto: false 
+        };
+    }
+
+    // Define percentual baseado na antecedência
+    const percentualDesconto = diasAntecedencia > 10 ? 14 : 10;
+    
+    // Calcula valor com desconto e arredonda para cima
+    const valorComDesconto = valorOriginal * (1 - percentualDesconto / 100);
+    const valorFinal = Math.ceil(valorComDesconto);
+    const desconto = valorOriginal - valorFinal;
+
+    return { 
+        valorFinal, 
+        desconto, 
+        percentualDesconto,
+        temDesconto: true 
+    };
+}
+
 // Ferramenta: Listar Tickets
 server.tool(
     "listar_tickets",
@@ -183,12 +233,15 @@ server.tool(
         try {
             const result = await getTicketsDisponiveis(dataVisita);
             
+            // Calcula dias de antecedência para o desconto
+            const diasAntecedencia = calcularDiasAntecedencia(dataVisita);
+            
             // Calcula o dia da semana
             const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
             const dataObj = new Date(dataVisita + 'T12:00:00');
             const diaSemana = diasSemana[dataObj.getDay()];
             
-            // Formata o retorno de forma limpa para a LLM
+            // Formata o retorno de forma limpa para a LLM (com desconto aplicado)
             const planosFormatados = result.simplified.reduce((acc: any[], ticket: any) => {
                 // Agrupa por plano
                 let plano = acc.find(p => p.plano === ticket.plano);
@@ -196,13 +249,28 @@ server.tool(
                     plano = { plano: ticket.plano, tickets: [] };
                     acc.push(plano);
                 }
-                plano.tickets.push({
+                
+                // Calcula desconto se aplicável
+                const descontoInfo = calcularValorComDesconto(ticket.valor, ticket.nome, diasAntecedencia);
+                
+                const ticketFormatado: any = {
                     ticketId: ticket.id,
                     descricao: ticket.nome,
-                    valor: ticket.valor
-                });
+                    valor: descontoInfo.valorFinal
+                };
+                
+                // Adiciona info de desconto se houver
+                if (descontoInfo.temDesconto) {
+                    ticketFormatado.valorOriginal = ticket.valor;
+                    ticketFormatado.descontoAplicado = `${descontoInfo.percentualDesconto}%`;
+                }
+                
+                plano.tickets.push(ticketFormatado);
                 return acc;
             }, []);
+
+            // Monta informação sobre desconto
+            const percentualDesconto = diasAntecedencia > 10 ? 14 : 10;
 
             return {
                 content: [{
@@ -210,6 +278,8 @@ server.tool(
                     text: JSON.stringify({
                         dataConsultada: dataVisita,
                         diaSemana: diaSemana,
+                        diasAntecedencia: diasAntecedencia,
+                        descontoAntecipacao: `${percentualDesconto}% aplicado em Ingresso Adulto e Infantil`,
                         planos: planosFormatados
                     }, null, 2)
                 }]
@@ -273,7 +343,8 @@ server.tool(
             };
         }
 
-        // 2. Montar itens da venda com valores validados
+        // 2. Montar itens da venda com valores validados (com desconto aplicado)
+        const diasAntecedencia = calcularDiasAntecedencia(dataVisita);
         const itensComValor: any[] = [];
         let valorTotal = 0;
 
@@ -290,12 +361,17 @@ server.tool(
                 };
             }
 
-            const valorItem = ticketInfo.valor;
+            // Aplica desconto se elegível
+            const descontoInfo = calcularValorComDesconto(ticketInfo.valor, ticketInfo.nome, diasAntecedencia);
+            const valorItem = descontoInfo.valorFinal;
+            
             valorTotal += valorItem * item.quantidade;
             
             itensComValor.push({
                 ...item,
-                valorUnitario: valorItem
+                valorUnitario: valorItem,
+                valorOriginal: ticketInfo.valor,
+                descontoAplicado: descontoInfo.temDesconto ? descontoInfo.percentualDesconto : 0
             });
         }
 
