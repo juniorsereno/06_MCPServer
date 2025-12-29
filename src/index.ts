@@ -184,18 +184,17 @@ server.tool(
 // Ferramenta: Gerar Venda
 server.tool(
     "gerar_venda",
+    "Gera uma venda de ingressos e retorna o link de pagamento. IMPORTANTE: Esta ferramenta aceita APENAS os campos listados abaixo. NÃO adicione campos extras como 'id', 'transactionId' ou qualquer outro não especificado.",
     {
         itens: z.array(z.object({
-            ticketId: z.string().describe("ID do ticket obtido na listagem de tickets (obrigatório)"),
-            // valorUnitario removido: será buscado automaticamente
-            quantidade: z.number().default(1).describe("Quantidade de ingressos deste tipo")
-        })).describe("Lista de itens a serem comprados. VENDA ÚNICA: Para vender apenas 1 ingresso, adicione UM objeto com o ID do ingresso desejado. VENDA MÚLTIPLA: Para vender 1 Adulto e 1 Infantil, adicione DOIS objetos nesta lista: um com o ID do ingresso Adulto e outro com o ID do ingresso Infantil. Formato: [{ticketId: '<ID_DO_TICKET>', quantidade: <NUMERO>}]"),
-        dataVisita: z.string().describe(`Data da visita no formato AAAA-MM-DD. IMPORTANTE: A data atual é ${getDataAtualBrasil()}. Não aceite datas passadas.`),
-        // Dados do comprador/visitante principal obrigatórios
-        compradorNome: z.string().describe("Nome completo do comprador/responsável"),
-        compradorDocumento: z.string().describe("CPF do comprador (apenas números, sem pontuação)"),
-        compradorEmail: z.string().describe("Email válido do comprador para envio do voucher"),
-        compradorTelefone: z.string().describe("Telefone do comprador com DDD (apenas números)")
+            ticketId: z.string().describe("ID do ticket (string) obtido do campo 'ticketId' retornado pela ferramenta listar_tickets"),
+            quantidade: z.number().min(1).describe("Quantidade de ingressos deste tipo (número inteiro >= 1)")
+        })).min(1).describe("Array de objetos representando os ingressos. Cada objeto deve ter APENAS 'ticketId' (string) e 'quantidade' (number). Exemplo: [{\"ticketId\": \"823813\", \"quantidade\": 2}]"),
+        dataVisita: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe(`Data da visita no formato AAAA-MM-DD (ex: 2026-01-15). Data atual: ${getDataAtualBrasil()}. Não aceite datas passadas.`),
+        compradorNome: z.string().min(3).describe("Nome completo do comprador (mínimo 3 caracteres)"),
+        compradorDocumento: z.string().regex(/^\d{11}$/).describe("CPF do comprador com 11 dígitos numéricos, SEM pontuação."),
+        compradorEmail: z.string().email().describe("Email válido do comprador para envio do voucher."),
+        compradorTelefone: z.string().regex(/^\d{10,11}$/).describe("Telefone com DDD, 10 ou 11 dígitos numéricos SEM pontuação.")
     },
     async ({ itens, dataVisita, compradorNome, compradorDocumento, compradorEmail, compradorTelefone }) => {
         // Validação de data passada ANTES de processar
