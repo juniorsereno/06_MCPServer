@@ -7,9 +7,44 @@ import https from 'https';
 import crypto from 'crypto';
 import express from 'express';
 import { parseStringPromise } from 'xml2js';
+import pg from 'pg';
 // Configurações
 const PORT = process.env.WEBHOOK_PORT || 3000;
 const WEBHOOK_URL_BASE = process.env.WEBHOOK_URL_BASE || `http://localhost:${PORT}`;
+// Configuração do PostgreSQL
+const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:W020kCWMosb7kv9QtCQAiHaKDG0oZBfs@206.183.128.152:5432/supabase?sslmode=disable';
+const pool = new pg.Pool({
+    connectionString: DATABASE_URL
+});
+// Função para salvar venda no banco
+async function salvarVenda(dados) {
+    try {
+        const query = `
+            INSERT INTO bali_park.vendas 
+            (nome, cpf, telefone, email, voucher_code, valor_total, link_pagamento, sale_id, data_visita)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id
+        `;
+        const values = [
+            dados.nome,
+            dados.cpf,
+            dados.telefone,
+            dados.email,
+            dados.voucherCode,
+            dados.valorTotal,
+            dados.linkPagamento,
+            dados.saleId,
+            dados.dataVisita
+        ];
+        const result = await pool.query(query, values);
+        console.log(`[DB] Venda salva com ID: ${result.rows[0].id}`);
+        return result.rows[0].id;
+    }
+    catch (error) {
+        console.error(`[DB] Erro ao salvar venda:`, error.message);
+        throw error;
+    }
+}
 // Armazenamento temporário para as promessas de venda
 const pendingSales = new Map();
 // Configura servidor Express
@@ -295,6 +330,23 @@ server.tool("gerar_venda", "Gera uma venda de ingressos e retorna o link de paga
         const ticketsResult = sellResult?.Tickets?.SaleItemResult;
         const ingressos = Array.isArray(ticketsResult) ? ticketsResult : [ticketsResult];
         // Formata retorno limpo para a LLM
+        // Salva a venda no banco de dados
+        try {
+            await salvarVenda({
+                nome: compradorNome,
+                cpf: compradorDocumento,
+                telefone: compradorTelefone,
+                email: compradorEmail,
+                voucherCode: webhookData?.data?.voucherCode || '',
+                valorTotal: webhookData?.data?.value || valorTotal,
+                linkPagamento: webhookData?.data?.url || '',
+                saleId: saleId || '',
+                dataVisita: dataVisita
+            });
+        }
+        catch (dbError) {
+            console.error(`[GerarVenda] Erro ao salvar no banco (venda continuará):`, dbError.message);
+        }
         return {
             content: [{
                     type: "text",
