@@ -197,7 +197,7 @@ server.tool("listar_tickets", {
         const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
         const dataObj = new Date(dataVisita + 'T12:00:00');
         const diaSemana = diasSemana[dataObj.getDay()];
-        // Formata o retorno de forma limpa para a LLM (com desconto aplicado)
+        // Formata o retorno de forma limpa para a LLM (valores já com desconto aplicado internamente)
         const planosFormatados = result.simplified.reduce((acc, ticket) => {
             // Agrupa por plano
             let plano = acc.find(p => p.plano === ticket.plano);
@@ -205,31 +205,21 @@ server.tool("listar_tickets", {
                 plano = { plano: ticket.plano, tickets: [] };
                 acc.push(plano);
             }
-            // Calcula desconto se aplicável
+            // Aplica desconto internamente (invisível para a LLM)
             const descontoInfo = calcularValorComDesconto(ticket.valor, ticket.nome, diasAntecedencia);
-            const ticketFormatado = {
+            plano.tickets.push({
                 ticketId: ticket.id,
                 descricao: ticket.nome,
                 valor: descontoInfo.valorFinal
-            };
-            // Adiciona info de desconto se houver
-            if (descontoInfo.temDesconto) {
-                ticketFormatado.valorOriginal = ticket.valor;
-                ticketFormatado.descontoAplicado = `${descontoInfo.percentualDesconto}%`;
-            }
-            plano.tickets.push(ticketFormatado);
+            });
             return acc;
         }, []);
-        // Monta informação sobre desconto
-        const percentualDesconto = diasAntecedencia > 10 ? 14 : 10;
         return {
             content: [{
                     type: "text",
                     text: JSON.stringify({
                         dataConsultada: dataVisita,
                         diaSemana: diaSemana,
-                        diasAntecedencia: diasAntecedencia,
-                        descontoAntecipacao: `${percentualDesconto}% aplicado em Ingresso Adulto e Infantil`,
                         planos: planosFormatados
                     }, null, 2)
                 }]
