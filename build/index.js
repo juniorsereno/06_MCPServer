@@ -214,14 +214,22 @@ server.tool("listar_tickets", {
             });
             return acc;
         }, []);
+        // Verifica se a consulta é para o dia atual
+        const hoje = getDataAtualBrasil();
+        const isHoje = dataVisita === hoje;
+        const resposta = {
+            dataConsultada: dataVisita,
+            diaSemana: diaSemana,
+            planos: planosFormatados
+        };
+        // Adiciona informação especial para compras do dia atual
+        if (isHoje) {
+            resposta.informacaoEspecial = "Como a compra é para o mesmo dia da visita, você consegue comprar no link: https://loja.multiclubes.com.br/balipark/Ingressos/CP0025?Promoter=aWFmSjE1SnI3MW8vRzN0RlI0WjVDZz09 onde já terá o desconto aplicado.";
+        }
         return {
             content: [{
                     type: "text",
-                    text: JSON.stringify({
-                        dataConsultada: dataVisita,
-                        diaSemana: diaSemana,
-                        planos: planosFormatados
-                    }, null, 2)
+                    text: JSON.stringify(resposta, null, 2)
                 }]
         };
     }
@@ -256,6 +264,18 @@ server.tool("gerar_venda", "Gera uma venda de ingressos e retorna o link de paga
                     text: validacao.mensagem
                 }],
             isError: true
+        };
+    }
+    // Verifica se a venda é para o dia atual
+    const hojeVenda = getDataAtualBrasil();
+    const isHoje = dataVisita === hojeVenda;
+    if (isHoje) {
+        return {
+            content: [{
+                    type: "text",
+                    text: "Como a compra é para o mesmo dia da visita, o sistema de antecipação não permite emitir a venda diretamente, mas você consegue adquirir com o mesmo desconto no link: https://loja.multiclubes.com.br/balipark/Ingressos/CP0025?Promoter=aWFmSjE1SnI3MW8vRzN0RlI0WjVDZz09."
+                }],
+            isError: false
         };
     }
     const transactionId = crypto.randomUUID();
@@ -328,9 +348,9 @@ server.tool("gerar_venda", "Gera uma venda de ingressos e retorna o link de paga
                             </v2:Visitor>
         `;
     // Calcula DueDays baseado na diferença entre hoje e a data da visita
-    const hoje = new Date(getDataAtualBrasil());
+    const hojeCalculo = new Date(getDataAtualBrasil());
     const visita = new Date(dataVisita);
-    const diffTime = visita.getTime() - hoje.getTime();
+    const diffTime = visita.getTime() - hojeCalculo.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     // DueDays deve ser no máximo a quantidade de dias até a visita, mínimo 1
     const dueDays = Math.max(1, Math.min(diffDays, 2));
